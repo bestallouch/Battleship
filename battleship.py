@@ -24,18 +24,6 @@ class spot:
             pygame.draw.rect(screen, color, (self.i * w, self.j * h, w, h), st)
             pygame.display.update()
             
-#    def sink(self,grid):
-#        i = self.i
-#        j = self.j
-#        a = grid[i][j].hit
-#        for k in range (14,22):
-#            for r in range (1,10):
-#                if grid[i][j].hit == True and :
-#            print('wew')
-#            grid[i][j].show(grey,0) 
-#        else:
-#            pass
-
 cols = 24
 grid = [0 for i in range(cols)]
 row = 12
@@ -114,7 +102,7 @@ def placeship(grid, x1, y1, x2, y2):
             grid[x1+1][i].obs = True
             grid[x1][i-1].obs = True
             grid[x1][i+1].obs = True
-            grid[x1][i].show(red, 0)
+#            grid[x1][i].show(red, 0)
     else:
         for i in range(min(x1, x2), max(x1, x2)+1):
            grid[i][y1].ship = True
@@ -123,7 +111,7 @@ def placeship(grid, x1, y1, x2, y2):
            grid[i][y1+1].obs = True
            grid[i-1][y1].obs = True
            grid[i+1][y1].obs = True
-           grid[i][y1].show(red, 0)
+#           grid[i][y1].show(red, 0)
     return True
            
 ships2place = [3,2,2,1,1,1,0,0,0,0]
@@ -136,9 +124,7 @@ while ships2place !=[]:
     gen = genship(x1, y1, l)
     x2 = gen[0]
     y2 = gen[1]
-#    print('x2', x2, 'y2', y2)
     place =  placeship(grid,x1, y1, x2, y2)
-    print(place)
     if place == False:
         ships2place.insert(0, l)
 
@@ -155,7 +141,7 @@ def mousePress(x):
     elif acess.obs == False and 0<g1<11 and 0<g2<11:
         acess.ship = True
         acess.show(green, 0)
-
+        acess.show(white, 1)
 
 loop = True
 while loop:
@@ -189,17 +175,61 @@ for i in range(1, 11):
                 user_ships_neighbours += 1
             if grid[i][j-1].ship == True:
                 user_ships_neighbours += 1
-print(user_ships)
-print(user_ships_neighbours)
-#if user_ships != 20 or user_ships_neighbours !=20:
-#    Tk().wm_withdraw()
-#    result = messagebox.askokcancel('Warning', ('Unfortunatelly, you placed ships wrong, \n would you like to restart the game?'))
-#    if result == True:
-#        os.execl(sys.executable,sys.executable, *sys.argv)
-#    else:
-#        pygame.quit()
 
+if user_ships != 20 or user_ships_neighbours !=20:
+    Tk().wm_withdraw()
+    result = messagebox.askokcancel('Warning', ('Unfortunatelly, you have placed the ships wrong, \n would you like to restart the game?'))
+    if result == True:
+        os.execl(sys.executable,sys.executable, *sys.argv)
+    else:
+        pygame.quit()
 
+def sink(grid, x, y):
+    n = e = s = w = 0
+    for i in range(1,4):
+        if grid[x+i][y].ship == True and grid[x+i][y].hit == True:
+            e = e + 1
+        if grid[x+i][y].ship == True and grid[x+i][y].hit == False:
+            return False
+        if grid[x+i][y].ship == False:
+            break
+    for i in range(1,4):
+        if grid[x-i][y].ship == True and grid[x-i][y].hit == True:
+            w = w + 1
+        if grid[x-i][y].ship == True and grid[x-i][y].hit == False:
+            return False
+        if grid[x-i][y].ship == False:
+            break
+    for i in range(1,4):
+        if grid[x][y+i].ship == True and grid[x][y+i].hit == True:
+            n = n + 1
+        if grid[x][y+i].ship == True and grid[x][y+i].hit == False:
+            return False
+        if grid[x][y+i].ship == False:
+            break
+    for i in range(1,4):
+        if grid[x][y-i].ship == True and grid[x][y-i].hit == True:
+            s = s + 1
+        if grid[x][y-i].ship == True and grid[x][y-i].hit == False:
+            return False
+        if grid[x][y-i].ship == False:
+            break
+    if n == e == s == w == 0:
+        grid[x][y].show(red, 0)
+        return True
+    if n > 0:
+        for i in range (0, n+1):
+            grid[x][y+i].show(red, 0)
+    if s > 0:
+        for i in range (0, s+1):
+            grid[x][y-i].show(red, 0)
+    if w > 0:
+        for i in range (0, w+1):
+            grid[x-i][y].show(red, 0)
+    if e > 0:
+        for i in range (0, e+1):
+            grid[x+i][y].show(red, 0)
+    return True
 
 shot = False
 guess_hist = []
@@ -225,14 +255,15 @@ def mousePress(x, status, user_hits):
             acess.show(yellow, 0)
             acess.hit = True
             user_hits += 1
+            sink(grid, g1, g2)
             status = False
             return status, user_hits
     return status, user_hits
 
+sinking = 0
 loop = True
 while loop:
     ev = pygame.event.get()
-
     for event in ev:
         if event.type == pygame.QUIT:
             pygame.quit()
@@ -240,23 +271,96 @@ while loop:
             try:
                 pos = pygame.mouse.get_pos()
                 shot, user_hits = mousePress(pos, shot, user_hits)
-                print(shot)
-#                print(pos_hist)
+                ai_loop = True
                 if shot == True:
-                    guess_x = random.randint(1, 10)
-                    guess_y = random.randint(1, 10)
-                    if guess_hist.count((guess_x,guess_y)) == 0:
-                        guess_hist.append((guess_x,guess_y))
-    #                    print(guess_hist)
+                    while ai_loop:
+                        if sinking == 1 :
+                            if grid[orig_x + 1][orig_y].hit == True or grid[orig_x + 1][orig_y].obs == True:
+                                sinking = sinking + 1
+                            else:
+                                guess_x = orig_x + 1
+                                guess_y = orig_y
+                                guess_hist.append((guess_x,guess_y))
+                        if sinking == 2 :
+                            if grid[orig_x + 2][orig_y].hit == True or grid[orig_x + 2][orig_y].obs == True:
+                                sinking = sinking + 1
+                            else:
+                                guess_x = orig_x + 2
+                                guess_y = orig_y
+                                guess_hist.append((guess_x,guess_y))
+                        if sinking == 3:
+                            if grid[orig_x - 1][orig_y].hit == True or grid[orig_x - 1][orig_y].obs == True:
+                                sinking = sinking + 1
+                            else:
+                                guess_x = orig_x - 1
+                                guess_y = orig_y
+                                guess_hist.append((guess_x,guess_y))
+                        if sinking == 4:
+                            if grid[orig_x - 2][orig_y].hit == True or grid[orig_x - 2][orig_y].obs == True:
+                                sinking = sinking + 1
+                            else:
+                                guess_x = orig_x - 2
+                                guess_y = orig_y
+                                guess_hist.append((guess_x,guess_y))
+                        if sinking == 5:
+                            if grid[orig_x][orig_y + 1].hit == True or grid[orig_x][orig_y + 1].obs == True:
+                                sinking = sinking + 1
+                            else:
+                                guess_x = orig_x
+                                guess_y = orig_y + 1
+                                guess_hist.append((guess_x,guess_y))
+                        if sinking == 6:
+                            if grid[orig_x][orig_y + 2].hit == True or grid[orig_x][orig_y + 2].obs == True:
+                                sinking = sinking + 1
+                            else:
+                                guess_x = orig_x
+                                guess_y = orig_y + 2
+                                guess_hist.append((guess_x,guess_y))
+                        if sinking == 7:
+                            if grid[orig_x][orig_y - 1].hit == True or grid[orig_x][orig_y - 1].obs == True:
+                                sinking = sinking + 1
+                            else:
+                                guess_x = orig_x
+                                guess_y = orig_y - 1
+                                guess_hist.append((guess_x,guess_y))
+                        if sinking == 8:
+                            if grid[orig_x][orig_y - 2].hit == True or grid[orig_x][orig_y - 2].obs == True:
+                                sinking = 0
+                            else:
+                                guess_x = orig_x
+                                guess_y = orig_y - 2
+                                guess_hist.append((guess_x,guess_y))
+                                
+                        if sinking == 0 :
+                            guess_x = random.randint(1, 10)
+                            orig_x = guess_x
+                            guess_y = random.randint(1, 10)
+                            orig_y = guess_y
+                            guess_hist.append((guess_x,guess_y))
+                            while guess_hist.count((guess_x,guess_y)) != 1:
+                                guess_x = random.randint(1, 10)
+                                guess_y = random.randint(1, 10)
+                                guess_hist.append((guess_x,guess_y))
+                                
                         if grid[guess_x][guess_y].ship == True:
                             grid[guess_x][guess_y].show(purple,0)
+                            sink(grid, guess_x, guess_y)
                             grid[guess_x][guess_y].hit = True
                             ai_hits +=1
                         else:
+                            grid[guess_x][guess_y].hit = True
                             grid[guess_x][guess_y].show(blue,0)
+                            ai_loop = False
+                            
+                        print('guess', guess_x, guess_y)
+                        print('orig', orig_x, orig_y)
+                        if grid[orig_x][orig_y].ship == True:
+                            if sink(grid, orig_x, orig_y) == False:
+                                    sinking = 1
+                            else:
+                                    sinking = 0
             except AttributeError:
                 pass
-#            print(ai_hits)
         elif event.type == pygame.KEYDOWN or user_hits == 20 or ai_hits == 20:
             try:
                 if event.key == pygame.K_SPACE :
